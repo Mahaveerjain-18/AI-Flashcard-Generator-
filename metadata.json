@@ -1,0 +1,5 @@
+{
+  "name": "AI Flashcard Generator",
+  "description": "Generate study flashcards using AI and master them with spaced repetition.",
+  "requestFramePermissions": []
+}
