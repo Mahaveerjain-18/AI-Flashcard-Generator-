@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Settings as SettingsIcon, BrainCircuit, Sparkles } from "lucide-react";
+import React, { useState, useEffect, ReactNode } from "react";
+import { Settings as SettingsIcon, BrainCircuit, Sparkles, AlertCircle } from "lucide-react";
 import { View, Deck, Card, FlashcardDecks } from "./types";
 import { cn } from "./lib/utils";
 import Dashboard from "./components/Dashboard";
@@ -16,22 +16,35 @@ export default function App() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
+
+  // Check for configuration on mount
+  useEffect(() => {
+    try {
+      if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "undefined") {
+        console.warn("GEMINI_API_KEY is missing. AI generation will not work until configured in Vercel.");
+      }
+    } catch (e) {
+      console.error("Error checking configuration:", e);
+    }
+  }, []);
 
   // Load data on mount
   useEffect(() => {
-    const savedDecks = localStorage.getItem(STORAGE_KEY);
-    if (savedDecks) {
-      try {
+    try {
+      const savedDecks = localStorage.getItem(STORAGE_KEY);
+      if (savedDecks) {
         const parsed = JSON.parse(savedDecks) as FlashcardDecks;
         setDecks(parsed.decks || []);
-      } catch (e) {
-        console.error("Failed to parse saved decks", e);
       }
-    }
 
-    const savedKey = localStorage.getItem(API_KEY_STORAGE);
-    if (savedKey) {
-      setApiKey(savedKey);
+      const savedKey = localStorage.getItem(API_KEY_STORAGE);
+      if (savedKey) {
+        setApiKey(savedKey);
+      }
+    } catch (e) {
+      console.error("Failed to load data from localStorage", e);
+      setInitError("Failed to load your study data. Your browser storage might be restricted.");
     }
   }, []);
 
@@ -77,6 +90,26 @@ export default function App() {
     setSelectedDeck(deck);
     setView("review");
   };
+
+  if (initError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-2xl border border-red-100 text-center">
+          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <AlertCircle size={40} strokeWidth={2.5} />
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Initialization Error</h2>
+          <p className="text-gray-500 font-medium mb-8 leading-relaxed">{initError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-blue-500 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition-all uppercase tracking-widest text-sm shadow-xl shadow-blue-100"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50/50 font-sans selection:bg-blue-100 selection:text-blue-600">

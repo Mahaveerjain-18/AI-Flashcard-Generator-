@@ -7,9 +7,21 @@ export interface GeneratedCard {
   difficulty: Difficulty;
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAiInstance() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "undefined") {
+      throw new Error("GEMINI_API_KEY is not configured. Please add it to your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 export async function generateFlashcardsWithGemini(content: string): Promise<GeneratedCard[]> {
+  const ai = getAiInstance();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Analyze this study content and generate 10-15 flashcards. Each flashcard must have: front (question), back (answer), difficulty (easy/medium/hard).
